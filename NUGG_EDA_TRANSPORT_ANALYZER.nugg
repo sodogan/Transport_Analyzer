@@ -1,0 +1,1886 @@
+<?xml version="1.0" encoding="utf-8"?>
+<nugget name="EDA_TRANSPORT_ANALYZER">
+ <PROG NAME="ZSTKOES_BC_TRANSPORTLISTE" VARCL="X" SUBC="1" RMAND="112" RLOAD="D" FIXPT="X" UCCHECK="X">
+  <textPool>
+   <language SPRAS="D">
+    <textElement ID="R" ENTRY="Programm ZSTKOES_BC_TRANSPORTLISTE" LENGTH="34 "/>
+    <textElement ID="S" KEY="P_ANZMAX" ENTRY="D       ." LENGTH="21 "/>
+    <textElement ID="S" KEY="P_RCODE" ENTRY="D       ." LENGTH="14 "/>
+    <textElement ID="S" KEY="P_VARI" ENTRY="D       ." LENGTH="14 "/>
+    <textElement ID="S" KEY="SO_DATE" ENTRY="D       ." LENGTH="13 "/>
+    <textElement ID="S" KEY="SO_EANUM" ENTRY="D       ." LENGTH="12 "/>
+    <textElement ID="S" KEY="SO_MODUL" ENTRY="D       ." LENGTH="12 "/>
+    <textElement ID="S" KEY="SO_PREV" ENTRY="D       ." LENGTH="23 "/>
+    <textElement ID="S" KEY="SO_SORT" ENTRY="        Sort" LENGTH="12 "/>
+    <textElement ID="S" KEY="SO_SYST" ENTRY="D       ." LENGTH="18 "/>
+    <textElement ID="S" KEY="SO_TRCLI" ENTRY="D       ." LENGTH="20 "/>
+    <textElement ID="S" KEY="SO_TRFUN" ENTRY="        Auftragstyp" LENGTH="19 "/>
+    <textElement ID="S" KEY="SO_TROWN" ENTRY="D       ." LENGTH="23 "/>
+    <textElement ID="S" KEY="SO_TRRQ" ENTRY="D       ." LENGTH="23 "/>
+    <textElement ID="S" KEY="SO_TRSTA" ENTRY="D       ." LENGTH="14 "/>
+    <textElement ID="S" KEY="SO_TRTXT" ENTRY="D       ." LENGTH="24 "/>
+    <textElement ID="S" KEY="SO_TSTND" ENTRY="D       ." LENGTH="16 "/>
+   </language>
+  </textPool>
+  <dynpros>
+   <dynpro PROG="ZSTKOES_BC_TRANSPORTLISTE" DNUM="9001" FNUM="9001" BZMX="46 " BZBR="242 " MILI="192 " MICO="37 " MALI="0 " MACO="0 " NOLI="46 " NOCO="242 " VALP="0 " CUAN="G" SPRA="D" DTEXT="ALV">
+    <dynprofield FNAM="ALV_GRID_CONTAINER" DIDX="002E" FLG1="00" FLG2="30" FLG3="00" FILL="U" FMB1="30" FMB2="00" LENG="F2" LINE="01" COLN="02" LANF="00" LBLK="00" LREP="00" AUTH="101" AGLT="17" ADEZ="79"/>
+    <dynprofield FNAM="OK_CODE" DIDX="0000" FLG1="80" FLG2="10" FLG3="00" FMB1="00" FMB2="00" LENG="14" LINE="FF" COLN="01" LTYP="O" LANF="00" LBLK="00" LREP="00" TYPE="CHAR" AGLT="00" ADEZ="00" STXT="____________________"/>
+    <dynproflowsource>process before output.
+ MODULE pbo_9001.
+*
+process after input.
+ MODULE pai_9001.</dynproflowsource>
+   </dynpro>
+  </dynpros>
+  <pfstatus>
+   <pfstatus_sta CODE="MAIN9001" MODAL="D" ACTCODE="000001" PFKCODE="000001" BUTCODE="0001" INT_NOTE="ALV"/>
+   <pfstatus_fun CODE="BACK" TEXTNO="001" TEXT_TYPE="S" FUN_TEXT="Zurück"/>
+   <pfstatus_fun CODE="BACK" TEXTNO="002" TEXT_TYPE="S" FUN_TEXT="Beenden"/>
+   <pfstatus_fun CODE="EXIT" TEXTNO="001" TEXT_TYPE="S" TEXT_NAME="ICON_CANCEL" ICON_ID="@0W@" FUN_TEXT="Abbrechen"/>
+   <pfstatus_pfk CODE="000001" PFNO="03" FUNCODE="BACK" FUNNO="001"/>
+   <pfstatus_pfk CODE="000001" PFNO="12" FUNCODE="EXIT" FUNNO="001"/>
+   <pfstatus_pfk CODE="000001" PFNO="15" FUNCODE="BACK" FUNNO="002"/>
+   <pfstatus_set STATUS="MAIN9001" FUNCTION="BACK"/>
+   <pfstatus_set STATUS="MAIN9001" FUNCTION="EXIT"/>
+   <pfstatus_doc OBJ_TYPE="A" OBJ_CODE="000001" MODAL="D" INT_NOTE="ALV"/>
+   <pfstatus_doc OBJ_TYPE="P" OBJ_CODE="000001" MODAL="D" INT_NOTE="ALV"/>
+   <pfstatus_doc OBJ_TYPE="B" OBJ_CODE="000001" SUB_CODE="0001" MODAL="D" INT_NOTE="ALV"/>
+  </pfstatus>
+  <source>************************************************************************
+*        DEKLARATIONEN                                                 *
+************************************************************************
+
+INCLUDE zstkoes_bc_tr_auswert_top.    &quot; global Data
+
+*---------------------------------------------------------Selektionsbild
+INCLUDE zstkoes_bc_tr_auswert_sel.
+*----------------------------------------------------------------Forms
+INCLUDE zstkoes_bc_tr_auswert_c01.  &quot; Klassen
+INCLUDE zstkoes_bc_tr_auswert_f01.  &quot; Form Routinen
+INCLUDE zstkoes_bc_tr_auswert_pb001.
+INCLUDE zstkoes_bc_tr_auswert_pai01.
+
+************************************************************************
+*        VERARBEITUNG                                                  *
+************************************************************************
+
+AT SELECTION-SCREEN OUTPUT.
+*  IF sy-uname NE &apos;STKOES&apos;.
+*    call function &apos;SAPGUI_SET_FUNCTIONCODE&apos;
+*      exporting
+*        functioncode           = &apos;ONLI&apos;
+*      exceptions
+*        function_not_supported = 1
+*        others                 = 2.
+*  ENDIF.
+
+START-OF-SELECTION.
+* Ermittlung Transportstatus
+   perform get_tr_status changing gl_tb_BCTRST.
+
+  &quot;------------------------------------------------- Fülle Selectoptions
+  PERFORM slval_fill
+    CHANGING     gl_wa_slval.
+
+  &quot;---------------------------------------------- Hole Transportaufträge
+  PERFORM collect_trreqs
+    USING
+      gl_wa_slval
+      gl_tb_BCTRST
+    CHANGING
+      gl_tb_transp_data.
+
+  IF gl_tb_transp_data IS INITIAL. &quot; Finaler Check vor der ALV Ausgabe
+    MESSAGE s520(00) DISPLAY LIKE &apos;E&apos;. &quot;Es sind keine Einträge vorhanden
+    LEAVE LIST-PROCESSING.
+  ENDIF.
+  &quot;---------------------------------------------------- Füttere das alv
+
+  IF &lt;gt_alv_disp&gt; IS NOT ASSIGNED.
+    PERFORM table_create USING &apos;GT_ALV_DISP&apos;
+                               gl_tb_BCTRST.
+  ENDIF.
+  CALL SCREEN 9001.</source>
+ </PROG>
+ <PROG NAME="ZSTKOES_BC_TR_AUSWERT_TOP" VARCL="X" SUBC="I" RMAND="112" RLOAD="D" UCCHECK="X">
+  <textPool>
+   <language SPRAS="D">
+    <textElement ID="R" ENTRY="Include ZSTKOES_BC_TR_AUSWERT_TOP" LENGTH="33 "/>
+   </language>
+  </textPool>
+  <source>*&amp;---------------------------------------------------------------------*
+*&amp;  Include           ZSTKOES_BC_TR_AUSWERT_TOP
+*&amp;---------------------------------------------------------------------*
+
+REPORT  zstkoes_bc_tr_auswert_top.
+
+TYPE-POOLS: abap, ctslg, sctsc. &quot; Wichtig für Import Ergebnis
+
+**********************************************************************
+* Typ-Deklarationen
+**********************************************************************
+TYPES:
+  zstkoes_bc_sortbegriff TYPE char30,
+  ty_rg_trcli  TYPE RANGE OF trclient    INITIAL SIZE 0,
+  ty_rg_trrq   TYPE RANGE OF trkorr      INITIAL SIZE 0,
+  ty_rg_trtxt  TYPE RANGE OF as4text     INITIAL SIZE 0,
+  ty_rg_trfunc TYPE RANGE OF trfunction  INITIAL SIZE 0,
+  ty_rg_trown  TYPE RANGE OF as4user     INITIAL SIZE 0,
+  ty_rg_trst   TYPE RANGE OF trstatus    INITIAL SIZE 0,
+  ty_rg_date   TYPE RANGE OF as4date     INITIAL SIZE 0,
+  ty_rg_eanum  TYPE RANGE OF trvalue     INITIAL SIZE 0,
+  ty_rg_modul  TYPE RANGE OF trvalue     INITIAL SIZE 0,
+  ty_rg_prev   TYPE RANGE OF trkorr      INITIAL SIZE 0,
+  ty_rg_tstnd  TYPE RANGE OF trvalue     INITIAL SIZE 0,
+  ty_rg_sortbegriff  TYPE RANGE OF zstkoes_bc_sortbegriff,
+  ty_va_rcode  TYPE tstrfcofil-retcode,
+  ty_va_anzmax TYPE sytabix.
+
+
+TYPES:
+  BEGIN OF ty_wa_tempaction,
+    sysid   TYPE tstrfcofil-tarsystem,
+    date    TYPE tstrfcofil-trdate,
+    time    TYPE tstrfcofil-trtime,
+    rc      TYPE tstrfcofil-retcode,
+    stepid  TYPE tstrfcofil-function,
+  END OF ty_wa_tempaction.
+TYPES  ty_tb_tempaction TYPE STANDARD TABLE OF ty_wa_tempaction.
+TYPES: ty_tb_step   TYPE STANDARD TABLE OF ctslg_step.
+
+TYPES:
+  BEGIN OF ty_wa_sysid,
+    sysid   TYPE tstrfcofil-tarsystem,
+  END OF ty_wa_sysid.
+TYPES: ty_tb_sysid TYPE STANDARD TABLE OF ty_wa_sysid.
+
+TYPES:
+  BEGIN OF ty_wa_impok,
+    impok   TYPE char1,
+  END OF ty_wa_impok.
+TYPES:
+  ty_tb_impok   TYPE STANDARD TABLE OF ty_wa_impok,
+  ty_wa_cofil   TYPE ctslg_cofile,
+  ty_wa_sytem   TYPE ctslg_system,
+  ty_wa_step    TYPE ctslg_step,
+  ty_wa_action  TYPE ctslg_action,
+  ty_wa_sett    TYPE ctslg_settings,
+
+  BEGIN OF /DCA/P000_BC_WA_TR_AUSWERT_ALV,
+    TRRQ        TYPE  TRKORR,
+    TRFUNC      TYPE  TRFUNCTION,
+    TRSTATUS    TYPE  char30,
+    TRTXT       TYPE  AS4TEXT,
+    TROWN       TYPE  AS4USER,
+    DATE        TYPE  AS4DATE,
+    YEANR       TYPE  char32,
+    MODUL       TYPE  char32,
+    PREV        TYPE  char32,
+    TEST        TYPE  char32,
+    SORTBEGRIFF TYPE  char30,
+    EAE         TYPE  STRW_INT4,
+    KAE         TYPE  STRW_INT4,
+    KAP         TYPE  STRW_INT4,
+    PAE         TYPE  STRW_INT4,
+    PAP         TYPE  STRW_INT4,
+    CELLCOLOR   TYPE  LVC_T_SCOL,
+    FREMD       TYPE  char32,
+  END OF /DCA/P000_BC_WA_TR_AUSWERT_ALV,
+  ty_wa_alv     TYPE /DCA/P000_BC_WA_TR_AUSWERT_ALV,
+  ty_tb_alv     TYPE STANDARD TABLE OF ty_wa_alv,
+  BEGIN OF /dca/p000_bctrst,
+    MANDT	      TYPE MANDT,
+    TRKORR      TYPE TRKORR,
+    SYSNAME	    TYPE SYSNAME,
+    STATUS(1)   TYPE n,
+    MODUL	      TYPE char2,
+    SORTBEGRIFF TYPE char30,
+  END OF /dca/p000_bctrst,
+  ty_wa_BCTRST  TYPE /DCA/P000_BCTRST,
+  ty_tb_BCTRST  TYPE STANDARD TABLE OF ty_wa_BCTRST.
+
+TYPES:
+  BEGIN OF ty_wa_slval,
+    rg_trclient     TYPE ty_rg_trcli,
+    rg_trkorr       TYPE ty_rg_trrq,
+    rg_trtxt        TYPE ty_rg_trtxt,
+    rg_trfunc       TYPE ty_rg_trfunc,
+    rg_trown        TYPE ty_rg_trown,
+    rg_trst         TYPE ty_rg_trst,
+    rg_date         TYPE ty_rg_date,
+    rg_eanum        TYPE ty_rg_eanum,
+    rg_modul        TYPE ty_rg_modul,
+    rg_prev         TYPE ty_rg_prev,
+    rg_tstnd        TYPE ty_rg_tstnd,
+    rg_sortbegriff  TYPE ty_rg_SORTBEGRIFF,
+    p_rcode         TYPE ty_va_rcode,
+    p_anzmax        TYPE ty_va_anzmax,
+    p_nogreen       TYPE xfeld,
+  END OF ty_wa_slval.
+
+TYPES:
+  BEGIN OF ty_wa_retcode,
+    retcode TYPE strw_int4,
+    color   TYPE char1,
+  END OF ty_wa_retcode.
+
+TYPES:
+  BEGIN OF ty_wa_transp_data,
+    trrq      TYPE trkorr,
+    trfunc    TYPE trfunction,
+    trtxt     TYPE as4text,
+    trown     TYPE as4user,
+    trstat    TYPE trstatus,
+    trdate    TYPE as4date,
+    attr      TYPE trattr,
+    value     TYPE trvalue,
+    fremd     TYPE char100,
+    tarsystem TYPE tarsystem,
+  END OF ty_wa_transp_data,
+  ty_tb_transp_data TYPE STANDARD TABLE OF ty_wa_transp_data,
+
+  BEGIN OF ty_wa_sysname,
+    sname   TYPE sysname,
+  END OF ty_wa_sysname,
+  ty_tb_sysname TYPE STANDARD TABLE OF ty_wa_sysname,
+
+  BEGIN OF ty_wa_sel,
+    trcli       TYPE trclient,    &quot; Quellmandant
+    sysname     TYPE sysname ,    &quot; system name
+    trrq        TYPE trkorr,      &quot; Auftragsnummer
+    trtxt       TYPE as4text,     &quot; Kurzbeschreibung
+    trfunc      TYPE trfunction,  &quot; Auftragstyp
+    trown       TYPE as4user,     &quot; Inhaber
+    trrel       TYPE as4user,     &quot; Freigeber
+    trstat      TYPE trstatus,    &quot; TR-Status
+    date        TYPE as4date,     &quot; Datum von bis
+    sys         TYPE sysname,     &quot; Sysname für itab
+    eanum       TYPE trvalue,     &quot; EA-Nummer
+    modul       TYPE trvalue,     &quot; Modul
+    rcode       TYPE ty_va_rcode, &quot; Returncode
+    anzmax      TYPE sytabix,     &quot; Maximale Treffer
+    nogreen     TYPE xfeld,
+    prev        TYPE trkorr,      &quot; Vorgänger
+    tstnded     TYPE trattr,      &quot; Test nötig
+    sortbegriff TYPE char30,      &quot; Test nötig
+    variante    TYPE slis_vari,   &quot; Display Variante
+  END OF ty_wa_sel.
+
+
+**********************************************************************
+* Datendeklarationen
+**********************************************************************
+DATA:
+  gl_tb_BCTRST      TYPE ty_tb_BCTRST,
+  gl_tb_transp_data TYPE ty_tb_transp_data, &quot; Datentabelle
+  gl_tb_alv_tab     TYPE ty_tb_alv,     &quot; ALV Anzeige Tabelle
+  gl_wa_layout      TYPE disvariant,    &quot; ALV Variante
+  gl_wa_sel         TYPE ty_wa_sel,     &quot; WA für Select Options
+  gl_wa_slval       TYPE ty_wa_slval.   &quot; Übergabe wa mit Select Options
+
+**********************************************************************
+* Konstanten
+**********************************************************************
+
+CONSTANTS:
+  co_rc_fail TYPE int1 VALUE 8,
+  co_rc_warn TYPE int1 VALUE 4,
+  co_rc_ok   TYPE int1 VALUE 0,
+  co_anzmax  TYPE int2 VALUE 100.
+
+&quot; Attribute für Selektion
+CONSTANTS:
+  co_eanum              TYPE trattr VALUE &apos;Y_EA-NUMMER&apos;,
+  co_prev               TYPE trattr VALUE &apos;Y_VORGAENGER&apos;,
+  co_test               TYPE trattr VALUE &apos;Y_TEST_IM_PARTNERSYSTEM&apos;,
+  co_modul              TYPE trattr VALUE &apos;Y_MODUL&apos;.
+
+&quot; Einstellungen für den Fuba TR_READ_GLOBAL_INFO_OF_REQUEST
+CONSTANTS:
+  co_det_dep                  TYPE xfeld VALUE abap_on,
+  co_err_lev                  TYPE int1  VALUE 0,
+  co_miss_st                  TYPE xfeld VALUE abap_on,
+  co_imp_st                   TYPE char1 VALUE &apos;I&apos;,
+  co_del_st                   TYPE char1 VALUE &apos;&gt;&apos;,
+  co_start_st                 TYPE char1 VALUE &apos;&lt;&apos;.
+
+&quot; Farben für die Zelleinfärbung im ALV
+CONSTANTS:
+  co_clr_gray                 TYPE int1 VALUE 1, &quot; Grau
+  co_clr_yell                 TYPE int1 VALUE 3, &quot; Gelb
+  co_clr_gree                 TYPE int1 VALUE 5, &quot; Grün
+  co_clr_red                  TYPE int1 VALUE 6, &quot; Rot
+  co_clr_brig                 TYPE int1 VALUE 1,
+      &quot; Helligkeit bzw. Intensität der ALV-Farben
+  co_strc_alv                 TYPE strukname
+                              VALUE &apos;/DCA/P000_BC_WA_TR_AUSWERT_ALV&apos;,
+      &quot; Name der ALV-Struktur
+
+BEGIN OF co_trbatfunc,
+  matchcode_gen               TYPE trbatfunc VALUE &apos;Y&apos;,
+  call_in_background          TYPE trbatfunc VALUE &apos;O&apos;,
+  version_management          TYPE trbatfunc VALUE &apos;V&apos;,
+  ddic_activation             TYPE trbatfunc VALUE &apos;A&apos;,
+  export_appl_obj             TYPE trbatfunc VALUE &apos;X&apos;,
+  generation                  TYPE trbatfunc VALUE &apos;G&apos;,
+  import_appl_obj             TYPE trbatfunc VALUE &apos;D&apos;,
+  perf_actions_aft_act        TYPE trbatfunc VALUE &apos;R&apos;,
+  activation_tacob            TYPE trbatfunc VALUE &apos;B&apos;,
+  conv_tbatg                  TYPE trbatfunc VALUE &apos;N&apos;,
+  perf_actions_bef_act        TYPE trbatfunc VALUE &apos;Q&apos;,
+  eval_conv_logs              TYPE trbatfunc VALUE &apos;U&apos;,
+  distributor                 TYPE trbatfunc VALUE &apos;S&apos;,
+  ddic_activation_with_inact  TYPE trbatfunc VALUE &apos;J&apos;,
+  activation_enqu             TYPE trbatfunc VALUE &apos;M&apos;,
+  create_vers_aft_exp         TYPE trbatfunc VALUE &apos;E&apos;,
+  create_vers_aft_imp         TYPE trbatfunc VALUE &apos;F&apos;,
+  create_bu_vers_bef_imp      TYPE trbatfunc VALUE &apos;W&apos;,
+  activation_nametab          TYPE trbatfunc VALUE &apos;P&apos;,
+  external_depl_obj           TYPE trbatfunc VALUE &apos;T&apos;,
+  check_depl_status           TYPE trbatfunc VALUE &apos;t&apos;,
+  import                      TYPE trbatfunc VALUE &apos;I&apos;,
+END OF co_trbatfunc.
+
+************************************************************************
+
+  CONSTANTS:
+   gc_alv_dispo_e4     TYPE tabname  VALUE &apos;&lt;GT_ALV_DISP&gt;&apos;.
+
+DATA:
+  BEGIN OF gs_dynamic_alv,
+    pos                   TYPE i,
+    fieldname_alv         TYPE fieldname,
+    tabname               TYPE tabname,
+    fieldname             TYPE fieldname,
+    domname               TYPE domname,
+    scrtext_s             TYPE scrtext_s,
+    scrtext_m             TYPE scrtext_m,
+    scrtext_l             TYPE scrtext_l,
+    key                   TYPE char1,
+  END OF gs_dynamic_alv.
+
+  DATA:
+    gt_dynamic_alv        LIKE TABLE OF gs_dynamic_alv,
+    lv_tabname            TYPE tabname.
+
+  FIELD-SYMBOLS:
+       &lt;gt_alv_disp&gt;      TYPE STANDARD TABLE,
+       &lt;gt_alv_disp_line&gt; TYPE ANY.
+
+  DATA:
+    gt_alv_fcat           TYPE lvc_t_fcat                      ,
+    gcl_cont              TYPE REF TO cl_gui_custom_container  ,
+    gcl_grid              TYPE REF TO cl_gui_alv_grid.
+
+  TYPES:
+    BEGIN OF /dca/p000_bctran,
+      MANDT   TYPE mandt,
+      SYSNAME TYPE char10,
+    END OF /dca/p000_bctran.
+  DATA:
+    lt_p000_bctran TYPE TABLE OF /dca/p000_bctran WITH HEADER LINE.
+
+
+* MAKRO TO FILL TABLE FOR THE DYNAMIC ALV
+DEFINE fill_table.    &quot; DYNAMIC TABLE AND FIELDCATALOG
+  gs_dynamic_alv-pos              = &amp;8. &quot; POSITION IN ALV
+  gs_dynamic_alv-fieldname_alv    = &amp;1. &quot; NAME OF THE FIELD
+  gs_dynamic_alv-tabname          = &amp;2. &quot; REFERENCE TABLE
+  gs_dynamic_alv-fieldname        = &amp;3. &quot; REFERENCE FIELD
+  gs_dynamic_alv-domname          = &amp;4. &quot; OR DATA ELEMENT
+  gs_dynamic_alv-scrtext_s        = &amp;5. &quot; SCREEN-TEXT SMALL
+  gs_dynamic_alv-scrtext_m        = &amp;6. &quot; SCREEN-TEXT MIDDLE
+  gs_dynamic_alv-scrtext_l        = &amp;7. &quot; SCREEN-TEXT LONG
+  gs_dynamic_alv-key              = &amp;9. &quot; KEY FIELD
+  append gs_dynamic_alv to gt_dynamic_alv.
+END-OF-DEFINITION.</source>
+ </PROG>
+ <PROG NAME="ZSTKOES_BC_TR_AUSWERT_SEL" VARCL="X" SUBC="I" RMAND="112" RLOAD="D" UCCHECK="X">
+  <textPool>
+   <language SPRAS="D">
+    <textElement ID="R" ENTRY="Include ZSTKOES_BC_TR_AUSWERT_SEL" LENGTH="33 "/>
+   </language>
+  </textPool>
+  <source>*&amp;---------------------------------------------------------------------*
+*&amp;  Include           ZSTKOES_BC_TR_AUSWERT_SEL
+*&amp;---------------------------------------------------------------------*
+
+* Selektionsbildschirm
+  SELECT-OPTIONS:
+    so_trcli    FOR gl_wa_sel-trcli DEFAULT sy-mandt, &quot; Quellmandant
+    so_syst     FOR gl_wa_sel-sysname,                &quot; system name
+    so_trrq     FOR gl_wa_sel-trrq,                   &quot; Auftragsnummer
+    so_trtxt    FOR gl_wa_sel-trtxt,                  &quot; Kurzbeschreibung
+    so_trfun    FOR gl_wa_sel-trfunc,                 &quot; Auftragstyp
+    so_trown    FOR gl_wa_sel-trown,                  &quot; Inhaber
+    so_trsta    FOR gl_wa_sel-trstat,                 &quot; TR-Status
+    so_date     FOR gl_wa_sel-date,                   &quot; Datum von bis
+    so_eanum    FOR gl_wa_sel-eanum,                  &quot; EA-Num
+    so_modul    FOR gl_wa_sel-modul,                  &quot; Modul
+    so_prev     FOR gl_wa_sel-prev,                   &quot; Vorgänger
+    so_tstnd    FOR gl_wa_sel-tstnded,                &quot; Test nötig
+    so_sort     FOR gl_wa_sel-SORTBEGRIFF.
+
+  PARAMETERS:
+    p_rcode     LIKE gl_wa_sel-rcode,
+    p_anzmax    LIKE gl_wa_sel-anzmax    DEFAULT co_anzmax,
+*    p_nogree    LIKE gl_wa_sel-nogreen   DEFAULT &apos;&apos;,
+    p_vari      LIKE gl_wa_sel-variante.
+
+
+  INITIALIZATION.
+  lt_p000_bctran-mandt    = &apos;112&apos;.
+  lt_p000_bctran-sysname  = &apos;EDA&apos;.
+  APPEND lt_p000_bctran.
+  lt_p000_bctran-mandt    = &apos;005&apos;.
+  lt_p000_bctran-sysname  = &apos;KDA&apos;.
+  APPEND lt_p000_bctran.
+  lt_p000_bctran-mandt    = &apos;025&apos;.
+  lt_p000_bctran-sysname  = &apos;KLA&apos;.
+  APPEND lt_p000_bctran.
+  lt_p000_bctran-mandt    = &apos;005&apos;.
+  lt_p000_bctran-sysname  = &apos;PDA&apos;.
+  APPEND lt_p000_bctran.
+  lt_p000_bctran-mandt    = &apos;025&apos;.
+  lt_p000_bctran-sysname  = &apos;PLA&apos;.
+  APPEND lt_p000_bctran.</source>
+ </PROG>
+ <PROG NAME="ZSTKOES_BC_TR_AUSWERT_C01" VARCL="X" SUBC="I" RMAND="112" RLOAD="D" UCCHECK="X">
+  <textPool>
+   <language SPRAS="D">
+    <textElement ID="R" ENTRY="Include ZSTKOES_BC_TR_AUSWERT_C01" LENGTH="33 "/>
+   </language>
+  </textPool>
+  <source>*&amp;---------------------------------------------------------------------*
+*&amp;  Include           ZSTKOES_BC_TR_AUSWERT_C01
+*&amp;---------------------------------------------------------------------*
+
+CLASS lcl_event_receiver DEFINITION.
+  PUBLIC SECTION.
+
+    METHODS handle_hotspot_click
+      FOR EVENT hotspot_click OF cl_gui_alv_grid
+      IMPORTING e_row_id
+                e_column_id
+                es_row_no.
+ENDCLASS.                    &quot;gcl_event_receiver DEFINITION
+
+*----------------------------------------------------------------------*
+*       CLASS gcl_event_receiver IMPLEMENTATION
+*----------------------------------------------------------------------*
+*
+*----------------------------------------------------------------------*
+CLASS lcl_event_receiver IMPLEMENTATION.
+
+  METHOD handle_hotspot_click.
+    data:  lv_trrq type E070-TRKORR.
+    FIELD-SYMBOLS :&lt;lc_alv_tab&gt; TYPE any,
+                   &lt;lc_value&gt;   TYPE any.
+
+    READ TABLE &lt;gt_alv_disp&gt;  ASSIGNING &lt;lc_alv_tab&gt;
+                              INDEX e_row_id-index.
+    IF sy-subrc = 0 .
+      ASSIGN COMPONENT &apos;TRRQ&apos; OF STRUCTURE  &lt;lc_alv_tab&gt; TO &lt;lc_value&gt;.
+      IF sy-subrc EQ 0.
+        lv_trrq = &lt;lc_value&gt;.
+      ENDIF.
+
+    ENDIF.
+    CALL FUNCTION &apos;TR_LOG_OVERVIEW_REQUEST&apos;
+      EXPORTING
+        iv_trkorr              = lv_trrq  &quot;&lt;lc_alv_tab&gt;-trrq
+        iv_dir_type            = &apos;T&apos;
+        iv_detailed_chronology = abap_on
+*       IV_TARGET_SYSTEM       = &apos; &apos;
+*       IS_POPUP               = &apos;X&apos;
+      EXCEPTIONS
+        e_wrong_call           = 1
+        OTHERS                 = 2.
+    IF sy-subrc &lt;&gt; 0.
+    ENDIF.
+
+  ENDMETHOD.                    &quot;hotspot_click
+ENDCLASS.                    &quot;gcl_event_receiver IMPLEMENTATION</source>
+ </PROG>
+ <PROG NAME="ZSTKOES_BC_TR_AUSWERT_F01" VARCL="X" SUBC="I" RMAND="112" RLOAD="D" UCCHECK="X">
+  <textPool>
+   <language SPRAS="D">
+    <textElement ID="R" ENTRY="Include ZSTKOES_BC_TR_AUSWERT_F01" LENGTH="33 "/>
+   </language>
+  </textPool>
+  <source>*&amp;---------------------------------------------------------------------*
+*&amp;  Include           ZSTKOES_BC_TR_AUSWERT_F01
+*&amp;---------------------------------------------------------------------*
+
+*&amp;---------------------------------------------------------------------*
+*&amp;      Form  collect_trreqs
+*&amp;---------------------------------------------------------------------*
+*       Holt die Transportaufträge anhand der Selektionswerte
+*       aus den Protokollen und gibt diese zurück
+*----------------------------------------------------------------------*
+*    VALUE
+*    --&gt; CR_WA_SLVAL        Selektionswerte
+*
+*    &lt;-&gt; CR_TB_TRANSP_DATA  Ursprungsdaten
+*----------------------------------------------------------------------*
+ FORM collect_trreqs
+   USING
+     value(cr_wa_slval)  TYPE ty_wa_slval
+     value(cv_tb_BCTRST) TYPE ty_tb_BCTRST
+   CHANGING
+     cr_tb_transp_data   TYPE ty_tb_transp_data.
+
+**********************************************************************
+* Datendeklarationen
+**********************************************************************
+   DATA: lc_tb_sys                     TYPE ty_tb_sysname.
+   DATA: lc_tb_transp_data             TYPE ty_tb_transp_data.
+   DATA: lc_wa_transp_data             TYPE ty_wa_transp_data.
+
+*  DATA: lc_tb_transp_data             TYPE ty_tb_transp_data.
+
+   DATA: lc_wa_e070                    TYPE e070.
+   DATA: lc_wa_e070c                   TYPE e070c.
+   DATA: lc_wa_cofil                   TYPE ty_wa_cofil.
+   DATA: lc_wa_system                  TYPE ty_wa_sytem.
+   DATA: lc_wa_step                    TYPE ty_wa_step.
+   DATA: lc_wa_action                  TYPE ty_wa_action.
+   DATA: lc_wa_sett                    TYPE ty_wa_sett.
+
+   DATA: lc_va_sys                     TYPE sysname.
+   DATA: lc_va_itabmax                 TYPE i.
+   DATA: lc_va_impok                   TYPE char1.
+   DATA: lc_va_rcok                    TYPE xfeld.
+
+   DATA: lc_va_ATTRIBUTE_eanum  type TRATTR.
+   DATA: lc_va_ATTRIBUTE_modul  type TRATTR.
+   DATA: lc_va_ATTRIBUTE_prev  type TRATTR.
+   DATA: lc_va_ATTRIBUTE_tstnd  type TRATTR.
+   DATA: lc_va_sortbegriff type char32.
+
+   FIELD-SYMBOLS: &lt;lc_wa_transp_data&gt;  TYPE ty_wa_transp_data.
+   FIELD-SYMBOLS: &lt;lc_wa_transp_data2&gt; TYPE ty_wa_transp_data.
+
+**********************************************************************
+* Datenbeschaffung
+**********************************************************************
+
+
+   IF    cr_wa_slval-rg_eanum IS NOT INITIAL
+     OR  cr_wa_slval-rg_modul IS NOT INITIAL
+     OR  cr_wa_slval-rg_prev  IS NOT INITIAL
+     OR  cr_wa_slval-rg_tstnd IS NOT INITIAL.
+
+* begin ins sj190416
+     if cr_wa_slval-rg_eanum is INITIAL.
+       lc_va_ATTRIBUTE_eanum = &apos;%&apos;.
+     else.
+       lc_va_ATTRIBUTE_eanum = co_eanum.
+     endif.
+
+     if cr_wa_slval-rg_modul is INITIAL.
+       lc_va_ATTRIBUTE_modul = &apos;%&apos;.
+     else.
+       lc_va_ATTRIBUTE_modul = co_modul.
+     endif.
+
+     if cr_wa_slval-rg_prev is INITIAL.
+       lc_va_ATTRIBUTE_prev = &apos;%&apos;.
+     else.
+       lc_va_ATTRIBUTE_prev = co_prev.
+     endif.
+
+     if cr_wa_slval-rg_tstnd is INITIAL.
+       lc_va_ATTRIBUTE_tstnd = &apos;%&apos;.
+     else.
+       lc_va_ATTRIBUTE_tstnd = co_test.
+     endif.
+
+     SELECT trkorr AS trrq
+      INTO CORRESPONDING FIELDS OF TABLE cr_tb_transp_data
+      FROM e070a AS h
+      WHERE reference   IN cr_wa_slval-rg_eanum
+        AND attribute   like lc_va_ATTRIBUTE_eanum
+        AND EXISTS ( SELECT *
+                      FROM e070a
+                      WHERE trkorr    = h~trkorr
+                        AND reference   IN cr_wa_slval-rg_modul
+                        AND attribute   like lc_va_ATTRIBUTE_modul )
+      AND EXISTS ( SELECT *
+            FROM e070a
+            WHERE e070a~trkorr    = h~trkorr
+              AND reference   IN cr_wa_slval-rg_prev
+              AND attribute   like lc_va_ATTRIBUTE_prev )
+      AND EXISTS ( SELECT *
+            FROM e070a
+            WHERE e070a~trkorr    = h~trkorr
+              AND reference   IN cr_wa_slval-rg_tstnd
+              AND attribute   like lc_va_ATTRIBUTE_tstnd ).
+* end ins sj190416
+
+     IF sy-subrc &lt;&gt; 0.
+       MESSAGE s520(00) DISPLAY LIKE &apos;E&apos;.
+       LEAVE LIST-PROCESSING.
+     ENDIF.
+
+     SELECT
+       v~trkorr      AS trrq
+       v~trfunction  AS trfunc
+       v~as4text     AS trtxt
+       v~as4user     AS trown
+       v~trstatus    AS trstat
+       v~tarsystem   AS tarsystem
+       v~as4date     AS trdate
+       a~attribute   AS attr
+       a~reference   AS value
+     INTO CORRESPONDING FIELDS OF TABLE cr_tb_transp_data
+     FROM e070v AS v
+       LEFT OUTER JOIN e070a AS a ON a~trkorr = v~trkorr
+       FOR ALL ENTRIES IN cr_tb_transp_data
+     WHERE v~client      IN cr_wa_slval-rg_trclient
+       AND ( v~trkorr    IN cr_wa_slval-rg_trkorr AND
+             v~trkorr EQ cr_tb_transp_data-trrq )
+       AND v~as4text     IN cr_wa_slval-rg_trtxt
+       AND v~trfunction  IN cr_wa_slval-rg_trfunc
+       AND v~as4user     IN cr_wa_slval-rg_trown
+       AND v~trstatus    IN cr_wa_slval-rg_trst
+       AND v~as4date     IN cr_wa_slval-rg_date
+       AND v~strkorr     EQ space.
+
+
+   ELSE.
+
+     SELECT
+         v~trkorr      AS trrq
+         v~trfunction  AS trfunc
+         v~as4text     AS trtxt
+         v~as4user     AS trown
+         v~trstatus    AS trstat
+         v~tarsystem   AS tarsystem
+         v~as4date     AS trdate
+         a~attribute   AS attr
+         a~reference   AS value
+       INTO CORRESPONDING FIELDS OF TABLE cr_tb_transp_data
+       FROM e070v AS v
+         LEFT OUTER JOIN e070a AS a ON a~trkorr = v~trkorr
+       WHERE v~client      IN cr_wa_slval-rg_trclient
+         AND v~trkorr      IN cr_wa_slval-rg_trkorr
+         AND v~as4text     IN cr_wa_slval-rg_trtxt
+         AND v~trfunction  IN cr_wa_slval-rg_trfunc
+         AND v~as4user     IN cr_wa_slval-rg_trown
+         AND v~trstatus    IN cr_wa_slval-rg_trst
+         AND v~as4date     IN cr_wa_slval-rg_date
+         AND v~strkorr     EQ space.
+
+   ENDIF.
+
+   IF sy-subrc &lt;&gt; 0.
+     MESSAGE s520(00) DISPLAY LIKE &apos;E&apos;.
+     LEAVE LIST-PROCESSING.
+   ENDIF.
+
+   LOOP AT cr_tb_transp_data ASSIGNING &lt;lc_wa_transp_data&gt;.
+     IF &lt;lc_wa_transp_data&gt;-attr &lt;&gt; co_eanum
+       AND &lt;lc_wa_transp_data&gt;-attr &lt;&gt; co_modul
+       AND &lt;lc_wa_transp_data&gt;-attr &lt;&gt; co_prev
+       AND &lt;lc_wa_transp_data&gt;-attr &lt;&gt; co_test.
+
+       CLEAR: &lt;lc_wa_transp_data&gt;-attr, &lt;lc_wa_transp_data&gt;-value.
+
+     ENDIF.
+   ENDLOOP.
+
+   SORT cr_tb_transp_data ASCENDING BY trrq attr .
+   DELETE ADJACENT DUPLICATES FROM cr_tb_transp_data
+          COMPARING trrq attr value.
+
+* begin ins
+* Verprobung Sortbegriff
+   IF  cr_wa_slval-rg_SORTBEGRIFF IS NOT INITIAL.
+     LOOP AT cr_tb_transp_data ASSIGNING &lt;lc_wa_transp_data&gt;.
+       perform GET_SORT using   &lt;lc_wa_transp_data&gt;-trrq
+                                  cv_tb_BCTRST
+                            changing lc_va_sortbegriff.
+
+       if not lc_va_sortbegriff in cr_wa_slval-rg_SORTBEGRIFF.
+         delete cr_tb_transp_data.
+       endif.
+     endloop.
+   endif.
+* end ins
+
+   IF cr_wa_slval-p_rcode IS INITIAL .
+
+     SORT cr_tb_transp_data DESCENDING BY trdate.
+     DESCRIBE TABLE cr_tb_transp_data LINES lc_va_itabmax.
+     cr_wa_slval-p_anzmax = cr_wa_slval-p_anzmax + 1.
+     IF cr_wa_slval-p_anzmax &lt; lc_va_itabmax.
+       DELETE cr_tb_transp_data FROM cr_wa_slval-p_anzmax
+                                TO lc_va_itabmax.
+     ENDIF.
+   ENDIF.
+
+   LOOP AT cr_tb_transp_data ASSIGNING &lt;lc_wa_transp_data&gt;.
+     IF    &lt;lc_wa_transp_data&gt;-trstat &lt;&gt; &apos;R&apos;
+       AND cr_wa_slval-p_rcode IS INITIAL.
+
+     ELSE.
+
+       lc_wa_sett-detailed_depiction = co_det_dep.
+       lc_wa_sett-error_level = co_err_lev.
+       lc_wa_sett-point_to_missing_steps = co_miss_st.
+
+       CALL FUNCTION &apos;TR_READ_GLOBAL_INFO_OF_REQUEST&apos;
+         EXPORTING
+           iv_trkorr                 = &lt;lc_wa_transp_data&gt;-trrq
+           iv_dir_type               = &apos;T&apos;
+           is_settings               = lc_wa_sett
+*          iv_suppress_deleted_steps = &apos;X&apos;
+*          IT_COMM_SYSTEMS           =
+         IMPORTING
+           es_cofile                 = lc_wa_cofil
+*          EV_USER                   =
+*          EV_PROJECT                =
+         .
+
+**********************************************************************
+* Durch die Ergebnismenge in der lc_wa_cofil arbeiten
+* Falls der Returncode &gt; 4 -&gt;
+*    SAP Farbe 6 / rot (Fehler),
+* rc-code &lt;= 4
+*   Imp-ok -&gt;
+*     SAP Farbe 5 / grün,
+*   Imp- nicht ok -&gt;
+*     SAP Farbe 3 / gelb
+*   Export ok-&gt;
+*     SAP Farbe 1 / grau
+**********************************************************************
+
+       LOOP AT lc_wa_cofil-systems INTO lc_wa_system.
+
+         CASE &lt;lc_wa_transp_data&gt;-trfunc.
+           WHEN sctsc_type_customizing.
+             PERFORM check_customizing
+                    CHANGING
+                    lc_wa_system
+                    lc_va_impok.
+
+
+           WHEN OTHERS.
+             PERFORM check_workbench
+                 CHANGING
+                 lc_wa_system
+                 lc_va_impok.
+
+         ENDCASE.
+
+         perform check_BCTRST using lc_wa_system-systemid
+                                    &lt;lc_wa_transp_data&gt;-trrq
+                                    cv_tb_BCTRST
+                              changing lc_wa_system-rc.
+
+         IF    cr_wa_slval-p_rcode IS NOT INITIAL
+           and lc_wa_system-rc = cr_wa_slval-p_rcode
+           and  lc_wa_system-systemid in so_syst.
+
+           lc_va_rcok = abap_true.
+
+
+         ENDIF.
+
+
+         CLEAR: lc_wa_system, lc_va_impok.
+       ENDLOOP.
+
+       IF cr_wa_slval-p_rcode IS NOT INITIAL
+         AND lc_va_rcok EQ &apos; &apos;.
+
+         DELETE cr_tb_transp_data.
+         continue.
+       ELSE.
+         CLEAR lc_va_rcok .
+       ENDIF.
+
+     ENDIF.
+   ENDLOOP.
+ ENDFORM.
+
+
+*&amp;---------------------------------------------------------------------*
+*&amp;      Form  check_customizing
+*&amp;---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      &lt;--CR_WA_SYSTEM  text
+*      &lt;--CR_VA_IMPOK   text
+*----------------------------------------------------------------------*
+ FORM check_customizing
+   CHANGING
+     cr_wa_system                  TYPE ty_wa_sytem
+     cr_va_impok                   TYPE char1.
+
+   DATA: lc_wa_step                TYPE ty_wa_step.
+   DATA: lc_va_export              TYPE xfeld.
+   DATA: lc_va_import              TYPE xfeld.
+
+   READ TABLE cr_wa_system-steps
+        INTO lc_wa_step
+        WITH KEY stepid = co_trbatfunc-create_vers_aft_exp.
+   IF sy-subrc = 0.
+     PERFORM get_last_status
+     USING
+           cr_wa_system
+           co_trbatfunc-create_vers_aft_exp
+     CHANGING
+       cr_wa_system-rc
+       cr_va_impok.
+
+
+
+     READ TABLE cr_wa_system-steps
+          INTO lc_wa_step
+          WITH KEY stepid = co_trbatfunc-import.
+     IF sy-subrc = 0.
+       PERFORM get_last_status
+             USING
+                cr_wa_system
+                co_imp_st
+             CHANGING
+                 cr_wa_system-rc
+                 cr_va_impok.
+
+     ENDIF.
+
+   ELSE.
+
+
+     READ TABLE cr_wa_system-steps
+          INTO lc_wa_step
+          WITH KEY stepid = co_trbatfunc-perf_actions_aft_act.
+     IF sy-subrc = 0.
+       PERFORM get_last_status
+       USING
+             cr_wa_system
+             co_trbatfunc-perf_actions_aft_act
+       CHANGING
+         cr_wa_system-rc
+         cr_va_impok.
+     ELSE.
+
+       READ TABLE cr_wa_system-steps
+            INTO lc_wa_step
+            WITH KEY stepid = co_trbatfunc-import.
+       IF sy-subrc = 0.
+         PERFORM get_last_status
+               USING
+                  cr_wa_system
+                  co_imp_st
+               CHANGING
+                   cr_wa_system-rc
+                   cr_va_impok.
+
+       ENDIF.
+
+     ENDIF.
+   ENDIF.
+
+ ENDFORM.
+
+
+
+
+
+*&amp;---------------------------------------------------------------------*
+*&amp;      Form  check_workbench
+*&amp;---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      &lt;-&gt;CR_WA_SYSTEM  text
+*      &lt;-&gt;CR_VA_IMPOK   text
+*----------------------------------------------------------------------*
+ FORM check_workbench
+   CHANGING
+     cr_wa_system                  TYPE ty_wa_sytem
+     cr_va_impok                   TYPE char1.
+
+   DATA: lc_wa_step                    TYPE ty_wa_step.
+
+   READ TABLE cr_wa_system-steps
+        INTO lc_wa_step
+        WITH KEY stepid = co_trbatfunc-create_vers_aft_exp.
+   IF sy-subrc = 0.
+     PERFORM get_last_status
+     USING
+           cr_wa_system
+           co_trbatfunc-create_vers_aft_exp
+     CHANGING
+       cr_wa_system-rc
+       cr_va_impok.
+
+   ELSE.
+
+
+     READ TABLE cr_wa_system-steps
+          INTO lc_wa_step
+          WITH KEY stepid = co_trbatfunc-ddic_activation.
+     IF sy-subrc = 0.
+       PERFORM get_last_status
+       USING
+             cr_wa_system
+             co_trbatfunc-ddic_activation
+       CHANGING
+         cr_wa_system-rc
+         cr_va_impok.
+
+       IF cr_wa_system-rc = 0 AND cr_va_impok = abap_true.
+         PERFORM get_last_status
+                     USING
+                           cr_wa_system
+                           co_trbatfunc-generation
+                     CHANGING
+                       cr_wa_system-rc
+                       cr_va_impok.
+
+       ENDIF.
+     ELSE.
+       READ TABLE cr_wa_system-steps
+            INTO lc_wa_step
+            WITH KEY stepid = co_trbatfunc-generation.
+       IF sy-subrc = 0.
+         PERFORM get_last_status
+         USING
+               cr_wa_system
+               co_trbatfunc-generation
+         CHANGING
+           cr_wa_system-rc
+           cr_va_impok.
+
+       ELSE.
+
+
+         READ TABLE cr_wa_system-steps
+              INTO lc_wa_step
+              WITH KEY stepid = co_trbatfunc-version_management .
+         IF sy-subrc = 0.
+           PERFORM get_last_status
+           USING
+                 cr_wa_system
+                 co_trbatfunc-version_management
+           CHANGING
+             cr_wa_system-rc
+             cr_va_impok.
+
+         ELSE.
+           PERFORM get_last_status
+                                 USING
+                                    cr_wa_system
+                                    co_trbatfunc-import
+                                 CHANGING
+                                     cr_wa_system-rc
+                                     cr_va_impok.
+         ENDIF.
+
+       ENDIF.
+     ENDIF.
+   ENDIF.
+
+ ENDFORM.
+
+
+*&amp;---------------------------------------------------------------------*
+*&amp;      Form  slval_fill
+*&amp;---------------------------------------------------------------------*
+*       Holt die Selektionswerte aus den globalen Variablen und gibt Sie
+*       zurück
+*----------------------------------------------------------------------*
+*      &lt;-&gt; CR_WA_SLVAL  Selektionswerte
+*----------------------------------------------------------------------*
+ FORM slval_fill
+   CHANGING
+   cr_wa_slval TYPE ty_wa_slval.
+   cr_wa_slval-rg_trclient[] = so_trcli[].
+   cr_wa_slval-rg_trkorr[]   = so_trrq[].
+   cr_wa_slval-rg_trtxt[]    = so_trtxt[].
+   cr_wa_slval-rg_trfunc[]   = so_trfun[].
+   cr_wa_slval-rg_trown[]    = so_trown[].
+   cr_wa_slval-rg_trst[]     = so_trsta[].
+   cr_wa_slval-rg_date[]     = so_date[].
+   cr_wa_slval-rg_eanum[]    = so_eanum[].
+   cr_wa_slval-rg_modul[]    = so_modul[].
+   cr_wa_slval-rg_prev[]     = so_prev[].
+   cr_wa_slval-rg_tstnd[]    = so_tstnd[].
+   cr_wa_slval-rg_SORTBEGRIFF = so_sort[].
+   cr_wa_slval-p_rcode       = p_rcode.
+   cr_wa_slval-p_anzmax      = p_anzmax.
+*   cr_wa_slval-p_nogreen     = p_nogree.
+
+ ENDFORM.
+
+*&amp;---------------------------------------------------------------------*
+*&amp;      Form  get_last_importstatus
+*&amp;---------------------------------------------------------------------*
+*       Holt den letzten Importstatus aus den COFile Aktionen
+*----------------------------------------------------------------------*
+*      VALUE
+*      &lt;-- CR_WA_SYSTEM   Cofile Aktion
+*      &lt;-&gt; CR_VA_RC       Returncode
+*      &lt;-&gt; CR_VA_impok    falls der Import ok ist -&gt; &apos;X&apos;,
+*                         falls nicht -&gt; &apos; &apos;,
+*                         falls zum Import anstehend -&gt; &apos;I&apos;
+*----------------------------------------------------------------------*
+ FORM get_last_status
+   USING
+     value(cv_wa_system) TYPE ty_wa_sytem
+     value(cv_va_status) TYPE char1
+   CHANGING
+     cr_va_rc     TYPE strw_int4
+     cr_va_impok  TYPE char1.
+
+**********************************************************************
+
+   DATA: lc_tb_tempaction  TYPE ty_tb_tempaction.
+   DATA: lc_tb_tempaction2 TYPE ty_tb_tempaction.
+   DATA: lc_wa_step        TYPE ty_wa_step.
+   DATA: lc_wa_tempaction  TYPE ty_wa_tempaction.
+   DATA: lc_wa_action      TYPE ty_wa_action.
+   DATA: lc_va_rc_i        TYPE strw_int4.
+   DATA: lc_va_rc_g        TYPE strw_int4.
+   DATA: lc_va_vorix       TYPE i.
+   DATA: lc_va_itablen     TYPE i.
+   DATA: lc_va_tmpsyid     TYPE ty_wa_tempaction-sysid.
+   DATA: lc_wa_sysid       TYPE ty_wa_sysid.
+   DATA: lc_tb_sysid       TYPE ty_tb_sysid.
+   DATA: lc_va_impok       TYPE char1.
+   DATA: lc_wa_impok       TYPE ty_wa_impok.
+   DATA: lc_tb_impok       TYPE ty_tb_impok.
+
+**********************************************************************
+   LOOP AT cv_wa_system-steps INTO lc_wa_step.
+     LOOP AT lc_wa_step-actions INTO lc_wa_action.
+       MOVE-CORRESPONDING lc_wa_action TO lc_wa_tempaction.
+
+       READ TABLE lc_tb_sysid
+            WITH KEY sysid = lc_wa_step-clientid
+            TRANSPORTING NO FIELDS.
+       IF sy-subrc &lt;&gt; 0 AND lc_wa_step-clientid IS NOT INITIAL.
+         APPEND lc_wa_step-clientid TO lc_tb_sysid.
+       ENDIF.
+
+       lc_wa_tempaction-sysid = lc_wa_step-clientid.
+       lc_wa_tempaction-stepid = lc_wa_step-stepid.
+       APPEND lc_wa_tempaction TO lc_tb_tempaction.
+     ENDLOOP.
+   ENDLOOP.
+
+   CLEAR: lc_wa_tempaction.
+
+   SORT lc_tb_tempaction DESCENDING BY sysid date time.
+   DELETE ADJACENT DUPLICATES FROM lc_tb_tempaction
+          COMPARING ALL FIELDS.
+
+   CLEAR: lc_tb_tempaction2.
+   lc_tb_tempaction2 = lc_tb_tempaction.
+
+   CLEAR: lc_tb_tempaction, lc_wa_tempaction.
+
+   LOOP AT lc_tb_sysid INTO lc_wa_sysid.
+     IF lines( lc_tb_sysid ) &gt; 1.
+       CLEAR: lc_tb_tempaction, lc_wa_tempaction.
+       LOOP AT lc_tb_tempaction2  INTO lc_wa_tempaction
+                                  WHERE sysid = lc_wa_sysid-sysid OR
+                                        sysid IS INITIAL.
+         APPEND lc_wa_tempaction TO lc_tb_tempaction.
+       ENDLOOP.
+
+     ELSE.
+       lc_tb_tempaction = lc_tb_tempaction2.
+     ENDIF.
+
+     DESCRIBE TABLE lc_tb_tempaction LINES lc_va_itablen.
+     IF lc_va_itablen EQ 1.
+       lc_wa_impok-impok = co_imp_st.
+       APPEND lc_wa_impok TO lc_tb_impok.
+       EXIT.
+     ENDIF.
+
+     READ TABLE lc_tb_tempaction
+          INTO lc_wa_tempaction
+          WITH KEY stepid = cv_va_status.
+     IF sy-subrc &lt;&gt; 0.
+       CONTINUE.
+     ENDIF.
+     lc_va_vorix = sy-tabix.
+
+     lc_va_vorix = lc_va_vorix + 1.
+     IF lc_va_vorix &lt; lc_va_itablen.
+       DELETE lc_tb_tempaction
+         FROM lc_va_vorix TO lc_va_itablen.
+     ENDIF.
+
+     SORT lc_tb_tempaction
+       DESCENDING BY date time rc.
+
+
+
+
+     DELETE lc_tb_tempaction WHERE stepid = co_del_st.
+
+
+     DELETE lc_tb_tempaction WHERE stepid &lt;&gt; cv_va_status.
+
+     READ TABLE lc_tb_tempaction INTO lc_wa_tempaction INDEX 1.
+
+     cr_va_rc = lc_wa_tempaction-rc.
+
+     IF cr_va_rc &gt; co_rc_warn.
+       lc_wa_impok-impok = abap_off.
+     ELSE.
+
+       READ TABLE lc_tb_tempaction
+            INTO lc_wa_tempaction
+            WITH KEY stepid = cv_va_status.
+       IF sy-subrc EQ 0.
+         lc_wa_impok-impok = abap_on.
+       ELSE.
+
+         lc_wa_impok-impok = abap_off.
+       ENDIF.
+     ENDIF.
+
+     APPEND lc_wa_impok TO lc_tb_impok.
+   ENDLOOP.
+
+   CLEAR: lc_wa_impok.
+
+   LOOP AT lc_tb_impok INTO lc_wa_impok.
+
+
+     IF lc_wa_impok-impok IS INITIAL.
+       cr_va_impok = lc_wa_impok-impok.
+       EXIT.
+     ELSEIF lc_wa_impok-impok = co_imp_st.
+       cr_va_impok = lc_wa_impok-impok.
+       EXIT.
+     ELSE.
+       cr_va_impok = lc_wa_impok-impok.
+     ENDIF.
+   ENDLOOP.
+ ENDFORM.
+*&amp;---------------------------------------------------------------------*
+*&amp;      Form  TABLE_CREATE
+*&amp;---------------------------------------------------------------------*
+ FORM table_create  USING    value(pv_type)
+                             value(cv_tb_BCTRST) TYPE ty_tb_BCTRST.
+   DATA:
+       oref          TYPE REF TO cx_root,
+       text          TYPE string,
+       lo_struct     TYPE REF TO cl_abap_structdescr,
+       lo_element    TYPE REF TO cl_abap_elemdescr,
+       lo_new_type   TYPE REF TO cl_abap_structdescr,
+       lo_new_tab    TYPE REF TO cl_abap_tabledescr,
+       lo_data       TYPE REF TO data,
+       lo_data_line  TYPE REF TO data,
+       lo_data_tmp   TYPE REF TO data,
+       lt_component  TYPE cl_abap_structdescr=&gt;component_table,
+       ls_component  LIKE LINE OF lt_component,
+       lv_comp       TYPE string,
+       lf_lines      TYPE i,
+       count(10)     TYPE c,
+       error         TYPE c,
+       lc_ref_evt    TYPE REF TO lcl_event_receiver,
+       lc_wa_transp_data   TYPE ty_wa_transp_data,
+       lc_tb_transp_data   TYPE ty_tb_transp_data.
+
+   FIELD-SYMBOLS: &lt;lc_wa_transp_data&gt;  TYPE ty_wa_transp_data.
+   FIELD-SYMBOLS: &lt;lc_wa_fcat&gt;         TYPE lvc_s_fcat.
+   FIELD-SYMBOLS: &lt;lc_value&gt;           TYPE any.
+   FIELD-SYMBOLS: &lt;lc_fremd&gt;           TYPE any.
+   FIELD-SYMBOLS: &lt;lt_value&gt;           TYPE ANY TABLE.
+
+   DATA: lc_wa_e070                    TYPE e070.
+   DATA: lc_wa_e070c                   TYPE e070c.
+   DATA: lc_wa_cofil                   TYPE ty_wa_cofil.
+   DATA: lc_wa_system                  TYPE ty_wa_sytem.
+   DATA: lc_wa_step                    TYPE ty_wa_step.
+   DATA: lc_wa_action                  TYPE ty_wa_action.
+   DATA: lc_wa_sett                    TYPE ty_wa_sett.
+
+   DATA: lc_va_sys                     TYPE sysname.
+   DATA: lc_va_itabmax                 TYPE i.
+   DATA: lc_va_impok                   TYPE char1.
+*   DATA: lc_va_rcok                    TYPE xfeld.
+   DATA: lc_va_green                   TYPE char1.
+   DATA: lc_va_TRKORR                  type TRKORR.
+   DATA: lc_va_sortbegriff             type char32.
+
+   DATA : ls_text TYPE  dd07v   .
+   DATA : lv_text TYPE domvalue_l.
+
+   FIELD-SYMBOLS: &lt;lc_wa_transp_data2&gt; TYPE ty_wa_transp_data.
+   FIELD-SYMBOLS: &lt;lc_va_sys&gt;          TYPE ty_wa_retcode.
+
+   PERFORM table_prepare_fields USING pv_type.
+
+   LOOP AT gt_dynamic_alv INTO gs_dynamic_alv.
+*   Field name
+     MOVE gs_dynamic_alv-fieldname_alv TO ls_component-name.
+*   Field type
+     IF gs_dynamic_alv-domname IS INITIAL.
+       CONCATENATE gs_dynamic_alv-tabname
+                   gs_dynamic_alv-fieldname
+             INTO lv_comp SEPARATED BY &apos;-&apos;.
+     ELSE.
+       lv_comp = gs_dynamic_alv-domname.
+     ENDIF.
+
+     ls_component-type ?= cl_abap_elemdescr=&gt;describe_by_name(
+       lv_comp
+     ).
+
+*   Filling the component table
+     APPEND ls_component TO lt_component.
+     CLEAR: ls_component.
+   ENDLOOP.
+
+* 2. Create a New Type
+   TRY .
+       lo_new_type = cl_abap_structdescr=&gt;create( lt_component ).
+     CATCH cx_sy_struct_creation INTO oref.
+       text = oref-&gt;get_text( ).
+       error = &apos;X&apos;.
+   ENDTRY.
+
+* 3. Create a new Table type
+   TRY .
+       lo_new_tab = cl_abap_tabledescr=&gt;create(
+                       p_line_type  = lo_new_type
+                       p_table_kind = cl_abap_tabledescr=&gt;tablekind_std
+                       p_unique     = abap_false ).
+     CATCH cx_sy_table_creation.
+       error = &apos;X&apos;.
+   ENDTRY.
+
+*4. data to handle the new table type
+   IF error NE &apos;X&apos;.
+     CREATE DATA lo_data TYPE HANDLE lo_new_tab.
+     CREATE DATA lo_data_tmp TYPE HANDLE lo_new_tab.
+*6. New internal table in the fieldsymbols
+     ASSIGN lo_data-&gt;* TO &lt;gt_alv_disp&gt;.
+
+*create the line
+     CREATE DATA lo_data_line LIKE LINE OF &lt;gt_alv_disp&gt;.
+     ASSIGN lo_data_line-&gt;* TO &lt;gt_alv_disp_line&gt;.
+
+* BREAK-POINT.
+
+     PERFORM alv_10_fieldcat.
+
+     CREATE OBJECT gcl_cont
+       EXPORTING
+         container_name = &apos;ALV_GRID_CONTAINER&apos;.
+
+     CREATE OBJECT gcl_grid
+       EXPORTING
+         i_parent = gcl_cont.
+
+     lc_tb_transp_data = gl_tb_transp_data.
+     SORT lc_tb_transp_data BY trrq.
+     DELETE ADJACENT DUPLICATES FROM lc_tb_transp_data COMPARING trrq.
+     SORT lc_tb_transp_data BY trdate.
+
+*lt_component
+*     LOOP AT gl_tb_transp_data  ASSIGNING &lt;lc_wa_transp_data&gt;.
+     LOOP AT lc_tb_transp_data  ASSIGNING &lt;lc_wa_transp_data&gt;.
+       ASSIGN COMPONENT &apos;TRRQ&apos;
+              OF STRUCTURE  &lt;gt_alv_disp_line&gt; TO &lt;lc_value&gt;.
+       IF sy-subrc EQ 0.
+         &lt;lc_value&gt; = &lt;lc_wa_transp_data&gt;-trrq.
+       ENDIF.
+       ASSIGN COMPONENT &apos;TARSYSTEM&apos;
+              OF STRUCTURE  &lt;gt_alv_disp_line&gt; TO &lt;lc_value&gt;.
+       IF sy-subrc EQ 0.
+         &lt;lc_value&gt; = &lt;lc_wa_transp_data&gt;-tarsystem.
+       ENDIF.
+       ASSIGN COMPONENT &apos;TRFUNC&apos;
+              OF STRUCTURE  &lt;gt_alv_disp_line&gt; TO &lt;lc_value&gt;.
+       IF sy-subrc EQ 0.
+         &lt;lc_value&gt; = &lt;lc_wa_transp_data&gt;-trfunc.
+       ENDIF.
+       ASSIGN COMPONENT &apos;TRSTATUS&apos;
+              OF STRUCTURE  &lt;gt_alv_disp_line&gt; TO &lt;lc_value&gt;.
+       IF sy-subrc EQ 0.
+*         &lt;lc_value&gt; = &lt;lc_wa_transp_data&gt;-trstat.
+         lv_text = &lt;lc_wa_transp_data&gt;-trstat.
+         IF lv_text IS NOT INITIAL.
+           CLEAR  :ls_text.
+           CALL FUNCTION &apos;DDUT_DOMVALUE_TEXT_GET&apos;
+             EXPORTING
+               name          = &apos;TRSTATUS&apos;
+               value         = lv_text
+               langu         = sy-langu
+               texts_only    = &apos; &apos;
+             IMPORTING
+               dd07v_wa      = ls_text
+             EXCEPTIONS
+               not_found     = 1
+               illegal_input = 2
+               OTHERS        = 3.
+           IF sy-subrc &lt;&gt; 0.
+*             MESSAGE ID sy-msgid TYPE sy-msgty NUMBER sy-msgno
+*                  WITH sy-msgv1 sy-msgv2 sy-msgv3 sy-msgv4.
+           ELSE.
+             CONCATENATE lv_text &apos;:&apos; ls_text-ddtext INTO &lt;lc_value&gt;
+             SEPARATED BY space.
+           ENDIF.
+         ELSE.
+            CONCATENATE lv_text &apos;:&apos; ls_text-ddtext INTO &lt;lc_value&gt;
+            SEPARATED BY space.
+         ENDIF.
+       ENDIF.
+       ASSIGN COMPONENT &apos;TRTXT&apos;
+              OF STRUCTURE  &lt;gt_alv_disp_line&gt; TO &lt;lc_value&gt;.
+       IF sy-subrc EQ 0.
+         &lt;lc_value&gt; = &lt;lc_wa_transp_data&gt;-trtxt.
+       ENDIF.
+       ASSIGN COMPONENT &apos;TROWN&apos;
+              OF STRUCTURE  &lt;gt_alv_disp_line&gt; TO &lt;lc_value&gt;.
+       IF sy-subrc EQ 0.
+         &lt;lc_value&gt; = &lt;lc_wa_transp_data&gt;-trown.
+       ENDIF.
+       ASSIGN COMPONENT &apos;DATE&apos;
+              OF STRUCTURE  &lt;gt_alv_disp_line&gt; TO &lt;lc_value&gt;.
+       IF sy-subrc EQ 0.
+         &lt;lc_value&gt; = &lt;lc_wa_transp_data&gt;-trdate.
+       ENDIF.
+
+       READ TABLE gl_tb_transp_data
+            INTO lc_wa_transp_data
+            WITH KEY trrq =  &lt;lc_wa_transp_data&gt;-trrq
+                     attr = co_eanum.
+       IF sy-subrc = 0.
+         ASSIGN COMPONENT &apos;YEANR&apos;
+                OF STRUCTURE  &lt;gt_alv_disp_line&gt; TO &lt;lc_value&gt;.
+         IF sy-subrc EQ 0 .
+           &lt;lc_value&gt;  = lc_wa_transp_data-value.
+         ENDIF.
+       ENDIF.
+
+
+       READ TABLE gl_tb_transp_data
+            INTO lc_wa_transp_data
+            WITH KEY trrq =  &lt;lc_wa_transp_data&gt;-trrq
+                     attr = co_modul.
+       IF sy-subrc = 0.
+         ASSIGN COMPONENT &apos;MODUL&apos;
+                OF STRUCTURE  &lt;gt_alv_disp_line&gt; TO &lt;lc_value&gt;.
+         IF sy-subrc EQ 0 .
+           &lt;lc_value&gt; = lc_wa_transp_data-value.
+         ENDIF.
+       ENDIF.
+
+
+       READ TABLE lc_tb_transp_data
+            INTO lc_wa_transp_data
+            WITH KEY trrq =  &lt;lc_wa_transp_data&gt;-trrq
+                     attr = co_prev.
+       IF sy-subrc = 0.
+         ASSIGN COMPONENT &apos;PREV&apos;
+                OF STRUCTURE  &lt;gt_alv_disp_line&gt; TO &lt;lc_value&gt;.
+         IF sy-subrc EQ 0.
+           &lt;lc_value&gt; = lc_wa_transp_data-value.
+         ENDIF.
+       ENDIF.
+
+
+       READ TABLE lc_tb_transp_data
+            INTO lc_wa_transp_data
+            WITH KEY trrq =  &lt;lc_wa_transp_data&gt;-trrq
+                     attr = co_test.
+       IF sy-subrc = 0.
+         ASSIGN COMPONENT &apos;TEST&apos;
+                OF STRUCTURE  &lt;gt_alv_disp_line&gt; TO &lt;lc_value&gt;.
+         IF sy-subrc EQ 0.
+           &lt;lc_value&gt; = lc_wa_transp_data-value.
+         ENDIF.
+       ENDIF.
+
+       ASSIGN COMPONENT &apos;FREMD&apos;
+              OF STRUCTURE  &lt;gt_alv_disp_line&gt; TO &lt;lc_value&gt;.
+       IF sy-subrc EQ 0.
+
+       ENDIF.
+       APPEND   &lt;gt_alv_disp_line&gt; TO &lt;gt_alv_disp&gt;.
+       CLEAR: &lt;lc_wa_transp_data&gt;-attr, &lt;lc_wa_transp_data&gt;-value.
+       CLEAR: &lt;gt_alv_disp_line&gt;.
+     ENDLOOP.
+
+* BREAK-POINT.
+     DELETE ADJACENT DUPLICATES FROM &lt;gt_alv_disp&gt;.
+
+     LOOP AT &lt;gt_alv_disp&gt; ASSIGNING &lt;gt_alv_disp_line&gt;.
+       ASSIGN COMPONENT &apos;TRRQ&apos;
+              OF STRUCTURE  &lt;gt_alv_disp_line&gt; TO &lt;lc_value&gt;.
+
+* begin ins
+       IF sy-subrc = 0.
+         lc_va_TRKORR  = &lt;lc_value&gt;.
+       endif.
+* end ins
+
+       lc_wa_sett-detailed_depiction = co_det_dep.
+       lc_wa_sett-error_level = co_err_lev.
+       lc_wa_sett-point_to_missing_steps = co_miss_st.
+       CALL FUNCTION &apos;TR_READ_GLOBAL_INFO_OF_REQUEST&apos;
+         EXPORTING
+           iv_trkorr                 = &lt;lc_value&gt;
+           iv_dir_type               = &apos;T&apos;
+           is_settings               = lc_wa_sett
+         IMPORTING
+           es_cofile                 = lc_wa_cofil
+         .
+
+       FIELD-SYMBOLS: &lt;lc_trfunc&gt; TYPE any.
+       FIELD-SYMBOLS: &lt;lc_retcode&gt; TYPE any.
+       DATA: lv_returncode   TYPE strw_int4.
+
+* begin ins
+       PERFORM GET_SORT
+                   USING
+                       lc_va_TRKORR
+                       CV_TB_BCTRST
+                   CHANGING
+                      lc_va_sortbegriff.
+
+       if not lc_va_sortbegriff is initial.
+         ASSIGN COMPONENT &apos;SORTBEGRIFF&apos;
+                OF STRUCTURE &lt;gt_alv_disp_line&gt; TO &lt;lc_value&gt;.
+
+         IF sy-subrc = 0.
+           &lt;lc_value&gt; = lc_va_sortbegriff.
+         Endif.
+       endif.
+* end ins
+       LOOP AT lc_wa_cofil-systems INTO lc_wa_system .
+*
+         ASSIGN COMPONENT &apos;TRFUNC&apos;
+                OF STRUCTURE  &lt;gt_alv_disp_line&gt; TO &lt;lc_trfunc&gt;.
+         CHECK sy-subrc EQ 0.
+
+
+         CASE &lt;lc_trfunc&gt;.
+           WHEN sctsc_type_customizing.
+             PERFORM check_customizing
+                    CHANGING
+                    lc_wa_system
+                    lc_va_impok.
+*
+*
+           WHEN OTHERS.
+             PERFORM check_workbench
+                  CHANGING
+                  lc_wa_system
+                  lc_va_impok.
+         ENDCASE.
+
+* begin ins
+         perform check_BCTRST using lc_wa_system-systemid
+                                   lc_va_TRKORR
+                                   cv_tb_BCTRST
+                    changing lc_wa_system-rc.
+* end ins
+
+         ASSIGN COMPONENT lc_wa_system-systemid
+                OF STRUCTURE &lt;gt_alv_disp_line&gt; TO &lt;lc_value&gt;.
+         IF sy-subrc = 0 .
+           &lt;lc_value&gt; = lc_wa_system-rc.
+         ELSE.
+           ASSIGN COMPONENT &apos;FREMD&apos;
+                  OF STRUCTURE &lt;gt_alv_disp_line&gt; TO &lt;lc_fremd&gt;.
+           CONCATENATE &lt;lc_fremd&gt; lc_wa_system-systemid
+           INTO &lt;lc_fremd&gt;
+           SEPARATED BY space.
+         ENDIF.
+
+         ASSIGN COMPONENT &apos;CELLCOLOR&apos;
+                OF STRUCTURE  &lt;gt_alv_disp_line&gt; TO &lt;lt_value&gt;.
+         DATA: lc_wa_color    TYPE lvc_s_scol.
+         CLEAR lc_wa_color.
+         lc_wa_color-fname     = lc_wa_system-systemid.
+*        lc_wa_color-color-inv = &apos;0&apos;.
+         lc_wa_color-color-int = co_clr_brig.
+
+         IF lc_wa_system-rc  &gt; co_rc_warn.
+           lc_wa_color-color-col = co_clr_red.
+         ELSE.
+
+           CASE lc_va_impok.
+             WHEN abap_on.
+               lc_wa_color-color-col = co_clr_gree.
+* lc_wa_color-color-int = co_clr_gray.
+             WHEN abap_off.
+               lc_wa_color-color-col = co_clr_gray.
+* lc_wa_color-color-int = co_clr_gray.
+             WHEN co_imp_st.
+               lc_wa_color-color-col = co_clr_yell.
+* lc_wa_color-color-int = co_clr_gray.
+           ENDCASE.
+         ENDIF.
+         INSERT lc_wa_color  INTO  TABLE &lt;lt_value&gt;.
+         CLEAR: lc_wa_system, lc_va_impok,lv_returncode.
+         UNASSIGN &lt;lc_va_sys&gt;.
+       ENDLOOP.
+     ENDLOOP.
+
+     DATA:  gs_layout TYPE lvc_s_layo.
+     DATA:  gs_variant TYPE disvariant.
+
+     gs_layout-ctab_fname = &apos;CELLCOLOR&apos;.
+     gs_layout-CWIDTH_OPT = &apos;X&apos;.
+
+     gs_variant-report = sy-repid.
+
+     CREATE OBJECT lc_ref_evt.
+     CALL METHOD gcl_grid-&gt;set_table_for_first_display
+       EXPORTING
+*        i_structure_name = &apos;/DCA/P000_BC_WA_TR_AUSWERT_ALV&apos;
+         is_layout        = gs_layout
+         is_variant       = gs_variant
+         i_save           = &apos;A&apos;
+       CHANGING
+         it_fieldcatalog  = gt_alv_fcat
+         it_outtab        = &lt;gt_alv_disp&gt;.
+
+     SET HANDLER lc_ref_evt-&gt;handle_hotspot_click  FOR gcl_grid.
+   ENDIF.
+ ENDFORM.
+
+
+*&amp;---------------------------------------------------------------------*
+*&amp;      Form  TABLE_PREPARE_FIELDS
+*&amp;---------------------------------------------------------------------*
+ FORM table_prepare_fields  USING value(pv_type).
+
+   DATA:
+       lv_pos_count          TYPE i,
+       lv_fieldname          TYPE fieldname,
+       lv_date               TYPE d,
+       lv_end_date           TYPE d,
+       lv_col_text           TYPE char10.
+   CLEAR: gt_dynamic_alv.
+
+   ADD 1 TO lv_pos_count.
+   fill_table
+     &apos;TRRQ&apos; &apos;/DCA/P000_BC_WA_TR_AUSWERT_ALV&apos; &apos;TRRQ&apos; &apos;TRKORR&apos;
+     &apos;Auftrag&apos; &apos;Auftrag/Aufgabe&apos; &apos;Auftrag/Aufgabe&apos; lv_pos_count &apos;&apos;.
+   ADD 1 TO lv_pos_count.
+   fill_table
+    &apos;TRFUNC&apos; &apos;&apos; &apos;&apos; &apos;TRFUNCTION&apos;
+     &apos;Typ&apos; &apos;Typ&apos; &apos;Typ&apos; lv_pos_count &apos;&apos;.
+   ADD 1 TO lv_pos_count.
+   fill_table
+     &apos;TRTXT&apos; &apos;&apos; &apos;&apos; &apos;AS4TEXT&apos;
+     &apos;Kurztext&apos; &apos;Kurztext&apos; &apos;Kurztext&apos; lv_pos_count &apos;&apos;.
+   ADD 1 TO lv_pos_count.
+   fill_table
+    &apos;TRSTATUS&apos; &apos;&apos; &apos;&apos; &apos;ABRKZ_TEXT&apos; &apos;AbrStatus&apos; &apos;AbrStatus&apos; &apos;AbrStatus&apos;
+    lv_pos_count &apos;&apos;.
+   ADD 1 TO lv_pos_count.
+   fill_table
+    &apos;TROWN&apos; &apos;&apos; &apos;&apos; &apos;AS4USER&apos;
+     &apos;Letzter Änderer&apos; &apos;Letzter Änderer&apos; &apos;Letzter Änderer&apos;
+     lv_pos_count &apos;&apos;.
+   ADD 1 TO lv_pos_count.
+   fill_table
+     &apos;DATE&apos; &apos;&apos; &apos;&apos; &apos;AS4DATE&apos;
+     &apos;Datum&apos; &apos;Datum&apos; &apos;Datum&apos; lv_pos_count &apos;&apos;.
+   ADD 1 TO lv_pos_count.
+   fill_table
+    &apos;YEANR&apos; &apos;&apos; &apos;&apos; &apos;ABADRENV&apos;
+    &apos;Umgebung&apos; &apos;Umgebung&apos; &apos;Umgebung&apos; lv_pos_count &apos;&apos;.
+   ADD 1 TO lv_pos_count.
+   fill_table
+    &apos;TARSYSTEM&apos; &apos;&apos; &apos;&apos; &apos;TARSYSTEM&apos;
+    &apos;Ziel&apos; &apos;Ziel&apos; &apos;Ziel&apos; lv_pos_count &apos;&apos;.
+   ADD 1 TO lv_pos_count.
+    fill_table
+     &apos;MODUL&apos; &apos;&apos; &apos;&apos; &apos;TRVALUE&apos;
+     &apos;Wert&apos; &apos;Wert&apos; &apos;Wert&apos; lv_pos_count &apos;&apos;.
+
+   ADD 1 TO lv_pos_count.
+   fill_table
+    &apos;PREV&apos; &apos;&apos; &apos;&apos; &apos;TRVALUE&apos;
+     &apos;Wert&apos; &apos;Wert&apos; &apos;Wert&apos; lv_pos_count &apos;&apos;.
+
+   ADD 1 TO lv_pos_count.
+   fill_table
+      &apos;TEST&apos; &apos;&apos; &apos;&apos; &apos;TRVALUE&apos;
+      &apos;Wert&apos; &apos;Wert&apos; &apos;Wert&apos; lv_pos_count &apos;&apos;.
+
+   ADD 1 TO lv_pos_count.
+   fill_table
+    &apos;SORTBEGRIFF&apos; &apos;&apos; &apos;&apos; &apos;ABADRENV&apos;
+    &apos;Umgebung&apos; &apos;Umgebung&apos; &apos;Umgebung&apos; lv_pos_count &apos;&apos;.
+
+   LOOP AT lt_p000_bctran.
+     ADD 1 TO lv_pos_count.
+     fill_table
+          lt_p000_bctran-sysname &apos;&apos; &apos;&apos; &apos;STRW_INT4&apos;
+          lt_p000_bctran-sysname lt_p000_bctran-sysname
+          lt_p000_bctran-sysname lv_pos_count &apos;&apos;.
+   ENDLOOP.
+
+   ADD 1 TO lv_pos_count.
+   fill_table
+    &apos;CELLCOLOR&apos; &apos;&apos; &apos;&apos; &apos;LVC_T_SCOL&apos; &apos;&apos; &apos;&apos; &apos;&apos; lv_pos_count &apos;&apos;.
+   ADD 1 TO lv_pos_count.
+   fill_table
+    &apos;FREMD&apos; &apos;&apos; &apos;&apos; &apos;CHAR100&apos; &apos;FREMD&apos; &apos;FREMD&apos; &apos;FREMD&apos; lv_pos_count &apos;&apos;.
+ ENDFORM.
+
+*&amp;---------------------------------------------------------------------*
+*&amp;      Form  ALV_10_FIELDCAT
+*&amp;---------------------------------------------------------------------*
+ FORM alv_10_fieldcat.
+   DATA:
+     lt_alv_fieldcatalog_merge TYPE lvc_t_fcat,
+     lt_alv_fieldcatalog       TYPE lvc_t_fcat,
+     slis_fieldcat             TYPE slis_t_fieldcat_alv,
+     lt_tabname                TYPE TABLE OF tabname,
+     lv_tabname                TYPE tabname,
+     lv_col_pos                TYPE sy-tabix,
+     ls_fcat                   TYPE lvc_s_fcat.
+
+   DATA: t_dummy TYPE STANDARD TABLE OF mandt.
+   DATA: lv_repid TYPE syrepid.
+   DATA: lv_repid2 TYPE syrepid.
+
+   FIELD-SYMBOLS: &lt;ls_alv_fieldcatalog&gt; TYPE lvc_s_fcat.
+
+   PERFORM get_tabname TABLES lt_tabname.
+
+   LOOP AT lt_tabname INTO lv_tabname.
+     CALL FUNCTION &apos;LVC_FIELDCATALOG_MERGE&apos;
+       EXPORTING
+         i_internal_tabname     = gc_alv_dispo_e4
+         i_structure_name       = lv_tabname
+         I_BYPASSING_BUFFER     = &apos;X&apos;
+       CHANGING
+         ct_fieldcat            = lt_alv_fieldcatalog_merge
+       EXCEPTIONS
+         inconsistent_interface = 1
+         program_error          = 2
+         OTHERS                 = 3.
+
+     IF sy-subrc EQ 0.
+       LOOP AT gt_dynamic_alv  INTO gs_dynamic_alv
+                               WHERE tabname  EQ lv_tabname.
+         READ TABLE lt_alv_fieldcatalog_merge INTO ls_fcat
+                     WITH KEY fieldname = gs_dynamic_alv-fieldname.
+         IF sy-subrc = 0.
+           IF gs_dynamic_alv-fieldname_alv &lt;&gt; ls_fcat-fieldname.
+             ls_fcat-fieldname = gs_dynamic_alv-fieldname_alv.
+           ENDIF.
+           IF gs_dynamic_alv-scrtext_s &lt;&gt; ls_fcat-scrtext_s AND
+              gs_dynamic_alv-scrtext_s &lt;&gt; &apos;&apos;.
+             ls_fcat-scrtext_s = gs_dynamic_alv-scrtext_s.
+           ENDIF.
+           IF gs_dynamic_alv-scrtext_m &lt;&gt; ls_fcat-scrtext_m AND
+              gs_dynamic_alv-scrtext_m &lt;&gt; &apos;&apos;.
+             ls_fcat-scrtext_m = gs_dynamic_alv-scrtext_m.
+           ENDIF.
+           IF gs_dynamic_alv-scrtext_l &lt;&gt; ls_fcat-scrtext_l AND
+              gs_dynamic_alv-scrtext_l &lt;&gt; &apos;&apos;.
+             ls_fcat-scrtext_l = gs_dynamic_alv-scrtext_l.
+             ls_fcat-reptext   = gs_dynamic_alv-scrtext_l.
+           ENDIF.
+           CLEAR: ls_fcat-key.
+           ls_fcat-col_pos = gs_dynamic_alv-pos.
+           APPEND ls_fcat TO lt_alv_fieldcatalog.
+         ENDIF.
+       ENDLOOP.
+       CALL FUNCTION &apos;LVC_FIELDCAT_COMPLETE&apos;
+         CHANGING
+           ct_fieldcat = lt_alv_fieldcatalog.
+
+       CLEAR lt_alv_fieldcatalog_merge.
+     ENDIF.
+   ENDLOOP.
+
+   LOOP AT gt_dynamic_alv INTO gs_dynamic_alv
+                               WHERE scrtext_s &lt;&gt; &apos;&apos;.
+     READ TABLE lt_alv_fieldcatalog ASSIGNING &lt;ls_alv_fieldcatalog&gt;
+                       WITH KEY fieldname =
+gs_dynamic_alv-fieldname_alv.
+     IF sy-subrc EQ 0.
+       &lt;ls_alv_fieldcatalog&gt;-reptext   = gs_dynamic_alv-scrtext_l.
+       &lt;ls_alv_fieldcatalog&gt;-scrtext_s = gs_dynamic_alv-scrtext_s.
+       &lt;ls_alv_fieldcatalog&gt;-scrtext_m = gs_dynamic_alv-scrtext_m.
+       &lt;ls_alv_fieldcatalog&gt;-scrtext_l = gs_dynamic_alv-scrtext_l.
+     ELSE.
+       CLEAR ls_fcat.
+       ls_fcat-fieldname = gs_dynamic_alv-fieldname_alv.
+       ls_fcat-tabname   = gc_alv_dispo_e4.
+       ls_fcat-reptext   = gs_dynamic_alv-scrtext_l.
+       ls_fcat-scrtext_s = gs_dynamic_alv-scrtext_s.
+       ls_fcat-scrtext_m = gs_dynamic_alv-scrtext_m.
+       ls_fcat-scrtext_l = gs_dynamic_alv-scrtext_l.
+       ls_fcat-col_pos   = gs_dynamic_alv-pos.
+       APPEND ls_fcat TO lt_alv_fieldcatalog.
+     ENDIF.
+
+   ENDLOOP.
+   LOOP AT lt_alv_fieldcatalog ASSIGNING &lt;ls_alv_fieldcatalog&gt;.
+     READ TABLE gt_dynamic_alv INTO gs_dynamic_alv
+          WITH KEY fieldname_alv = &lt;ls_alv_fieldcatalog&gt;-fieldname.
+     IF sy-subrc EQ 0.
+       IF gs_dynamic_alv-key EQ &apos;X&apos;.
+         &lt;ls_alv_fieldcatalog&gt;-key = &apos;X&apos;.
+       ENDIF.
+       &lt;ls_alv_fieldcatalog&gt;-col_pos = gs_dynamic_alv-pos.
+     ENDIF.
+
+     CASE &lt;ls_alv_fieldcatalog&gt;-fieldname.
+       WHEN &apos;TRRQ&apos;.
+         &lt;ls_alv_fieldcatalog&gt;-hotspot = abap_on.
+       WHEN &apos;YEANR&apos;.
+         &lt;ls_alv_fieldcatalog&gt;-scrtext_s = text-002 .
+         &lt;ls_alv_fieldcatalog&gt;-scrtext_l = text-002 .
+         &lt;ls_alv_fieldcatalog&gt;-scrtext_m = text-002 .
+       WHEN &apos;MODUL&apos;.
+         &lt;ls_alv_fieldcatalog&gt;-scrtext_s = text-006 .
+         &lt;ls_alv_fieldcatalog&gt;-scrtext_l = text-006 .
+         &lt;ls_alv_fieldcatalog&gt;-scrtext_m = text-006 .
+       WHEN &apos;PREV&apos;.
+         &lt;ls_alv_fieldcatalog&gt;-scrtext_s = text-003 .
+         &lt;ls_alv_fieldcatalog&gt;-scrtext_l = text-003 .
+         &lt;ls_alv_fieldcatalog&gt;-scrtext_m = text-003 .
+       WHEN &apos;TEST&apos;.
+         &lt;ls_alv_fieldcatalog&gt;-scrtext_s = text-004 .
+         &lt;ls_alv_fieldcatalog&gt;-scrtext_l = text-004 .
+         &lt;ls_alv_fieldcatalog&gt;-scrtext_m = text-004 .
+       WHEN &apos;FREMD&apos;.
+         &lt;ls_alv_fieldcatalog&gt;-scrtext_s = text-005 .
+         &lt;ls_alv_fieldcatalog&gt;-scrtext_l = text-005 .
+         &lt;ls_alv_fieldcatalog&gt;-scrtext_m = text-005 .
+       WHEN &apos;TRSTATUS&apos;.
+         &lt;ls_alv_fieldcatalog&gt;-outputlen = &apos;10&apos;.
+     ENDCASE.
+   ENDLOOP.
+   SORT lt_alv_fieldcatalog BY key DESCENDING col_pos.
+   gt_alv_fcat    = lt_alv_fieldcatalog.
+ ENDFORM.
+*&amp;---------------------------------------------------------------------*
+*&amp;      Form  GET_TABNAME
+*&amp;---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*      --&gt;P_LT_TABNAME  text
+*----------------------------------------------------------------------*
+ FORM get_tabname TABLES pt_tabname.
+   SORT gt_dynamic_alv BY tabname.
+
+   LOOP AT gt_dynamic_alv INTO gs_dynamic_alv.
+     COLLECT gs_dynamic_alv-tabname INTO pt_tabname.
+   ENDLOOP.
+   READ TABLE pt_tabname INDEX 1.
+   IF pt_tabname IS INITIAL.
+     DELETE pt_tabname INDEX 1.
+   ENDIF.
+ ENDFORM.
+*&amp;---------------------------------------------------------------------*
+*&amp;      Form  GET_TR_STATUS
+*&amp;---------------------------------------------------------------------*
+* Ermittlung Transportstatus
+*----------------------------------------------------------------------*
+ FORM GET_TR_STATUS  CHANGING cr_TB_BCTRST type ty_tb_BCTRST.
+
+   clear cr_TB_BCTRST.
+
+*   SELECT        * FROM  /DCA/P000_BCTRST
+*            into table cr_TB_BCTRST.
+
+   sort cr_TB_BCTRST by TRKORR.
+
+ ENDFORM.
+*&amp;---------------------------------------------------------------------*
+*&amp;      Form  CHECK_BCTRST
+*&amp;---------------------------------------------------------------------*
+*       Überprüfen Status aus Cust.-Tabelle
+*----------------------------------------------------------------------*
+ FORM CHECK_BCTRST  USING value(cv_va_SYSTEMID) type TRTARSYS
+                          value(cv_va_TRKORR) type TRKORR
+                          value(cv_tb_BCTRST) TYPE ty_tb_BCTRST
+                 CHANGING cr_va_RCODE type any.
+
+   data: lc_wa_BCTRST TYPE ty_wa_BCTRST.
+
+   read table cv_tb_BCTRST into lc_wa_BCTRST
+               with key TRKORR = cv_va_TRKORR
+                        SYSNAME = cv_va_SYSTEMID.
+
+   if sy-subrc = 0.
+     cr_va_RCODE = lc_wa_BCTRST-status.
+   endif.
+ ENDFORM.
+
+*&amp;---------------------------------------------------------------------*
+*&amp;      Form  GET_SORT
+*&amp;---------------------------------------------------------------------*
+*       Ermitllung Sort.Begriff
+*----------------------------------------------------------------------*
+ FORM GET_SORT  USING value(cv_va_TRKORR) type TRKORR
+                      value(cv_tb_BCTRST) TYPE ty_tb_BCTRST
+             CHANGING cr_va_sortbegriff type char32.
+
+   data: lc_wa_BCTRST TYPE ty_wa_BCTRST.
+
+   clear cr_va_sortbegriff.
+
+   read table cv_tb_BCTRST into lc_wa_BCTRST
+               with key TRKORR = cv_va_TRKORR
+                        SYSNAME = space.
+
+   if sy-subrc = 0.
+     cr_va_sortbegriff = lc_wa_BCTRST-sortbegriff.
+   endif.
+ ENDFORM.                    &quot; GET_SORT</source>
+ </PROG>
+ <PROG NAME="ZSTKOES_BC_TR_AUSWERT_PB001" VARCL="X" SUBC="I" RMAND="112" RLOAD="D" UCCHECK="X">
+  <textPool>
+   <language SPRAS="D">
+    <textElement ID="R" ENTRY="Include ZSTKOES_BC_TR_AUSWERT_PB001" LENGTH="35 "/>
+   </language>
+  </textPool>
+  <source>*&amp;---------------------------------------------------------------------*
+*&amp;  Include           ZSTKOES_BC_TR_AUSWERT_PB001
+*&amp;---------------------------------------------------------------------*
+MODULE pbo_9001 OUTPUT.
+  SET PF-STATUS &apos;MAIN9001&apos;.
+ENDMODULE.                 &quot; PBO_9001  OUTPUT</source>
+ </PROG>
+ <PROG NAME="ZSTKOES_BC_TR_AUSWERT_PAI01" VARCL="X" SUBC="I" RMAND="112" RLOAD="D" UCCHECK="X">
+  <textPool>
+   <language SPRAS="D">
+    <textElement ID="R" ENTRY="Include ZSTKOES_BC_TR_AUSWERT_PAI01" LENGTH="35 "/>
+   </language>
+  </textPool>
+  <source>*&amp;---------------------------------------------------------------------*
+*&amp;  Include           ZSTKOES_BC_TR_AUSWERT_PAI01
+*&amp;---------------------------------------------------------------------*
+
+*&amp;---------------------------------------------------------------------*
+*&amp;      Module  PAI_9001  INPUT
+*&amp;---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+MODULE PAI_9001 INPUT.
+  CASE SY-UCOMM.
+    WHEN &apos;EXIT&apos;.
+       LEAVE PROGRAM.
+    WHEN &apos;BACK&apos;.
+      LEAVE TO SCREEN 0.
+  ENDCASE.
+ENDMODULE.                 &quot; PAI_9001  INPUT</source>
+ </PROG>
+</nugget>
